@@ -49,7 +49,7 @@ async function verifyAgeProof(address, proof, publicSignals, dIdentityContract) 
 
   // Verify the zk-SNARK proof using snarkjs
   const res = await snarkjs.groth16.verify(vKey, publicSignals, proof);
-
+  
   // ! Just Chcking the snark js verification result
   // Ensure the verification result is true and the date of birth hash matches the expected value
   return res;
