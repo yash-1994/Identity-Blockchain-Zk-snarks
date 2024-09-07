@@ -1,0 +1,16 @@
+{
+  "name": "identity-blockchain-zk-snarks",
+  "version": "1.0.0",
+  "description": "This is the Project for HTM!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "snarkjs": "^0.7.4"
+  }
+}
