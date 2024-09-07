@@ -1,6 +1,11 @@
 import { ethers } from "ethers";
-import { snarkjs } from "snarkjs";
+import * as snarkjs from "snarkjs";
 import fs from "fs";
+
+import dotenv from "dotenv";
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Poseidon hash function (assuming it's implemented somewhere)
 async function poseidonHash(inputs) {
@@ -10,8 +15,12 @@ async function poseidonHash(inputs) {
 
 async function createAgeProof(privateKey, doBTimestamp, currentTimestamp, ageThreshold) {
   // Initialize a wallet instance with the provided private key
-  const wallet = new ethers.Wallet(privateKey);
+  console.log(privateKey.length)
 
+  if (privateKey.length !== 66) {
+    privateKey = "0x" + privateKey;
+  }
+  const wallet = new ethers.Wallet(privateKey);
   // Generate the Poseidon hash
   const hash = await poseidonHash([wallet.address, doBTimestamp]);
 
@@ -33,7 +42,7 @@ async function createAgeProof(privateKey, doBTimestamp, currentTimestamp, ageThr
 
 async function verifyAgeProof(address, proof, publicSignals, dIdentityContract) {
   // Get the user's identity data from the smart contract (e.g., date of birth hash)
-  const id = await dIdentityContract.getID(address);
+  //const id = await dIdentityContract.getID(address);
 
   // Load the verification key for the zk-SNARK circuit
   const vKey = JSON.parse(fs.readFileSync("verification_key_age.json"));
@@ -49,7 +58,7 @@ async function verifyAgeProof(address, proof, publicSignals, dIdentityContract) 
 async function main() {
   try {
     // Example inputs (replace with actual values)
-    const privateKey = "YOUR_PRIVATE_KEY_HERE";
+    const privateKey = process.env.WALLET_PRIVATE_KEY?.trim();// Example: 0x123456789abcdef
     const doBTimestamp = 946684800; // Example: January 1, 2000 (in seconds)
     const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
     const ageThreshold = 18 * 365 * 24 * 60 * 60; // Example: 18 years in seconds
@@ -62,6 +71,7 @@ async function main() {
       },
     };
 
+    console.log(privateKey)
     // Step 1: Create Age Proof
     console.log("Creating age proof...");
     const { proof, publicSignals } = await createAgeProof(privateKey, doBTimestamp, currentTimestamp, ageThreshold);
@@ -70,7 +80,7 @@ async function main() {
 
     // Step 2: Verify Age Proof
     console.log("Verifying age proof...");
-    const verificationResult = await verifyAgeProof(ethers.Wallet(privateKey).address, proof, publicSignals, dIdentityContract);
+    const verificationResult = await verifyAgeProof(new ethers.Wallet(privateKey).address, proof, publicSignals, dIdentityContract);
     console.log("Verification Result:", verificationResult);
 
   } catch (error) {
