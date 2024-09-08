@@ -31,7 +31,7 @@ bower_components
 
 # node_modules directory
 node_modules/
-
+circom/
 
 
 # Optional npm cache directory
