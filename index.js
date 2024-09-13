@@ -13,31 +13,23 @@ async function poseidonHash(inputs) {
   return "0x" + Buffer.from(inputs.join('')).toString('hex');
 }
 
-async function registerUser(address, doB, name, uid) {
+// async function registerUser(Waddress, doB, name, uid) {
   
-}
-
-
-
-
+// }
 
 // Encryption function
 function encryptStringArray(stringArray, key) {
     const algorithm = 'aes-256-cbc'; // AES encryption algorithm
     const iv = crypto.randomBytes(16); // Initialization vector (random)
 
-    // Create cipher with the key and initialization vector (iv)
     const cipher = crypto.createCipheriv(algorithm, crypto.scryptSync(key, 'salt', 32), iv);
 
-    // Convert array to string, then encrypt it
     let encrypted = cipher.update(stringArray.join(','), 'utf-8', 'hex');
     encrypted += cipher.final('hex');
 
-    // Combine the iv and encrypted content
     const encryptedData = iv.toString('hex') + ':' + encrypted;
     return encryptedData;
 }
-
 // Decryption function
 function decryptStringArray(encryptedData, key) {
     const algorithm = 'aes-256-cbc';
