@@ -11,6 +11,8 @@ template AgeProof() {
     signal input currentTimestamp; // Current time in seconds
     signal input ageThreshold; // Age threshold in seconds
     signal input hash; // Hash of the address and the DoB timestamp
+    signal input uid; // uid of the user
+    signal input name; //name of the user
 
     signal age;
     age <== currentTimestamp - doBTimestamp;
@@ -22,11 +24,13 @@ template AgeProof() {
     lte.out === 0;
 
     // Check if the hash is valid
-    //component poseidon = Poseidon(2);
-    //poseidon.inputs[0] <== address;
-    //poseidon.inputs[1] <== doBTimestamp;
-    //hash === poseidon.out;
+    component poseidon = Poseidon(4);
+    poseidon.inputs[0] <== address;
+    poseidon.inputs[1] <== doBTimestamp;
+    poseidon.inputs[2] <== uid;
+    poseidon.inputs[3] <== name;
+    hash === poseidon.out;
 
 }
 
-component main {public [address, currentTimestamp, ageThreshold, hash]} = AgeProof();
+component main {public [address, currentTimestamp, ageThreshold, hash , uid , name]} = AgeProof();
