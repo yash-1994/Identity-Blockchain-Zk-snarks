@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import * as snarkjs from "snarkjs";
 import fs from "fs";
-
+const crypto = require('crypto');
 import dotenv from "dotenv";
 
 // Load environment variables from .env file
@@ -11,6 +11,51 @@ dotenv.config();
 async function poseidonHash(inputs) {
   // Placeholder implementation, replace with actual Poseidon hash function
   return "0x" + Buffer.from(inputs.join('')).toString('hex');
+}
+
+async function registerUser(address, doB, name, uid) {
+  
+}
+
+
+
+
+
+// Encryption function
+function encryptStringArray(stringArray, key) {
+    const algorithm = 'aes-256-cbc'; // AES encryption algorithm
+    const iv = crypto.randomBytes(16); // Initialization vector (random)
+
+    // Create cipher with the key and initialization vector (iv)
+    const cipher = crypto.createCipheriv(algorithm, crypto.scryptSync(key, 'salt', 32), iv);
+
+    // Convert array to string, then encrypt it
+    let encrypted = cipher.update(stringArray.join(','), 'utf-8', 'hex');
+    encrypted += cipher.final('hex');
+
+    // Combine the iv and encrypted content
+    const encryptedData = iv.toString('hex') + ':' + encrypted;
+    return encryptedData;
+}
+
+// Decryption function
+function decryptStringArray(encryptedData, key) {
+    const algorithm = 'aes-256-cbc';
+
+    // Split the iv and encrypted content
+    const [ivHex, encrypted] = encryptedData.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+
+    // Create decipher with the key and iv
+    const decipher = crypto.createDecipheriv(algorithm, crypto.scryptSync(key, 'salt', 32), iv);
+
+    // Decrypt the content
+    let decrypted = decipher.update(encrypted, 'hex', 'utf-8');
+    decrypted += decipher.final('utf-8');
+
+    // Convert decrypted string back to an array
+    const originalArray = decrypted.split(',');
+    return originalArray;
 }
 
 async function createAgeProof(privateKey, doBTimestamp, currentTimestamp, ageThreshold) {
