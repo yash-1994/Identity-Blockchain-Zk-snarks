@@ -3,6 +3,7 @@ import * as snarkjs from "snarkjs";
 import fs from "fs";
 import crypto from 'crypto';
 import { buildPoseidon } from 'circomlibjs';
+import * as circomlibjs from 'circomlibjs';
 import { AuthContractABI, AuthContractAddress, DocumentAddress, DocumentABI } from './Constant.js';
 
 // Load environment variables from .env file
@@ -47,8 +48,6 @@ const contractABI = [
 	}
 ];
 
-
-
 // Create a provider (Infura, Alchemy, or a local node)
 const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
@@ -61,25 +60,38 @@ const wallet = new ethers.Wallet(privateKey, provider);
 const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 // Poseidon hash function (assuming it's implemented somewhere)
 async function poseidonHash(inputs) {
-  const poseidon = await buildPoseidon();
-  const hash = poseidon.F.toString(poseidon(inputs.map(BigInt)));
-  return hash;
+  const poseidon = await circomlibjs.buildPoseidon();
+  const poseidonHash = poseidon.F.toString(poseidon(inputs));
+  return poseidonHash;
 }
+
+function stringToBigInt(input) {
+  // Convert the string to a Buffer (byte array)
+  const buffer = Buffer.from(input, 'utf-8');
+
+  // Convert the buffer to a hex string
+  const hexString = buffer.toString('hex');
+
+  // Convert the hex string to a BigInt
+  const bigInt = BigInt('0x' + hexString);
+
+  return bigInt;
+}
+
 
 async function registerUser(Waddress, doB, name, uid) {
     // Create contract instance
     const authContract = new ethers.Contract(AuthContractAddress, AuthContractABI, wallet);
 
     // // Call authUser to assign an auth key to the user
-      // const authUserTra = await authContract.authUser(Waddress);  // no need to store this in `res` since it doesn't return anything
-      // authUserTra.wait();
+      const authUserTra = await authContract.authUser(Waddress);  // no need to store this in `res` since it doesn't return anything
+      authUserTra.wait();
     // Get the auth key for the user
     const key = await authContract.getAuthKey(Waddress);  // Await the result from the contract call
 
     // const encryptedData = encryptStringArray([Waddress, doB,uid,name], key);
     // const decrptedData = decryptStringArray(encryptedData, key);
 
-    return key;
     const enName = encryptString(name, key);
     const enDoB = encryptString(doB, key);
     const enUid = encryptString(uid, key);
@@ -135,6 +147,7 @@ function decryptString(encryptedData, key) {
 
 
 async function getData(address){
+  
   const authContract = new ethers.Contract(AuthContractAddress, AuthContractABI, wallet);
   const key = await authContract.getAuthKey(address);  // Await the result from the contract call
 
@@ -142,19 +155,24 @@ async function getData(address){
   const documentContract = new ethers.Contract(DocumentAddress, DocumentABI, wallet);
   const data = await documentContract.fetchDocument(address);
 
-  const { uid, dob, name } = data;
-  orginalUID = decryptString(uid, key)
-  orginalDoB = decryptString(dob, key)
-  orginalName = decryptString(name, key)
+  let { uid, dob, name } = data;
+  const orginalUID = decryptString(uid, key)
+  const orginalDoB = decryptString(dob, key)
+  const orginalName = decryptString(name, key)
 
   console.log("Uid is : ", orginalUID);
   console.log("Dob is : ", orginalDoB);
   console.log("Name is : ", orginalName);
+  //return console.log(address, orginalDoB, currentTimestamp, ageThreshold,orginalUID,name);
 
   const currentTimestamp = Math.floor(Date.now() / 1000); 
   const ageThreshold = 18 * 365 * 24 * 60 * 60; // Example: 18 years in seconds
    console.log("Creating age proof...");
-    const { proof, publicSignals } = await createAgeProof(address, orginalDoB, currentTimestamp, ageThreshold,orginalUID,orginalName);
+   
+   
+   name = ethers.utils.sha256(ethers.utils.toUtf8Bytes(name));   
+    console.log("New Encrypted Name: ", name);
+    const { proof, publicSignals } = await createAgeProof(address, orginalDoB, currentTimestamp, ageThreshold,orginalUID,name);
     console.log("Proof:", proof);
     console.log("Public Signals:", publicSignals);
 
@@ -167,6 +185,8 @@ async function getData(address){
 async function createAgeProof(address, doBTimestamp, currentTimestamp, ageThreshold,uid,name) {
   // Generate the Poseidon hash
   const hash = await poseidonHash([address, doBTimestamp,uid,name]);
+  console.log("Creating Poseidon Hash: ", hash);
+  console.log([address, doBTimestamp,uid,name]);
   console.log("wieniec");
   // Generate zk-SNARK proof and public signals
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(
@@ -198,7 +218,7 @@ async function verifyAgeProof(proof, publicSignals) {
 
 async function main() {
   try {
-    console.log(contract.address);
+    //console.log(contract.address);
     // Example inputs (replace with actual values)
     const address = "0x123456789abcdef";
     const doBTimestamp = 946684800; // Example: January 1, 2000 (in seconds)
@@ -239,8 +259,9 @@ async function main() {
     // console.log("Decrypted Data: ", decrptedData);
 
     
-    getData("0xDca60Cb8F4E7409e2FC4b028973bbFA56caD2578");
-
+   // registerUser("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa", "123456", "NAME", "15689"); 
+    getData("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa");
+  //console.log( stringToBigInt("NAME"))
 
   
   } catch (error) {
