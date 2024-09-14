@@ -259,8 +259,8 @@ async function main() {
     // console.log("Decrypted Data: ", decrptedData);
 
     
-   // registerUser("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa", "123456", "NAME", "15689"); 
-    getData("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa");
+   registerUser("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa", "123456", "NAME", "15689"); 
+    //getData("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa");
   //console.log( stringToBigInt("NAME"))
 
   
