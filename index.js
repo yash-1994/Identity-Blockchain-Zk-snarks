@@ -216,6 +216,53 @@ async function verifyAgeProof(proof, publicSignals) {
   return res;
 }
 
+function calculateAgeDifference(dob, currentDate) {
+  // Convert both dates to Date objects
+  const dobDate = new Date(dob);
+  const current = new Date(currentDate);
+
+  // Extract year, month, and day for both dates
+  let years = current.getFullYear() - dobDate.getFullYear();
+  let months = current.getMonth() - dobDate.getMonth();
+  let days = current.getDate() - dobDate.getDate();
+
+  // Adjust if the current month and day is before the birth month and day
+  if (months < 0 || (months === 0 && days < 0)) {
+    years--; // Subtract 1 year
+    months += 12; // Add 12 to months
+  }
+
+  // If days are negative, adjust by reducing months and recalculating days
+  if (days < 0) {
+    months--;
+    const previousMonth = (current.getMonth() === 0) ? 11 : current.getMonth() - 1;
+    const daysInPreviousMonth = new Date(current.getFullYear(), previousMonth + 1, 0).getDate();
+    days += daysInPreviousMonth;
+  }
+
+  return { years, months, days };
+}
+
+async function createNegNftProof(length){
+  const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+    {
+      x: length
+    },
+    "build_negNft/negative_nft_js/negative_nft.wasm",
+    "circuit_neg_nft.zkey"
+  );
+  return { proof, publicSignals };
+}
+
+async function verifyNegNftProof(proof, publicSignals) {
+  // Load the verification key for the zk-SNARK circuit
+   const vKey = JSON.parse(fs.readFileSync("verification_key_neg_nft.json"));
+  // // Verify the zk-SNARK proof using snarkjs
+  const res = await snarkjs.groth16.verify(vKey, publicSignals, proof);
+  
+  return res;
+}
+
 async function main() {
   try {
     //console.log(contract.address);
@@ -223,12 +270,12 @@ async function main() {
     const address = "0x123456789abcdef";
     const doBTimestamp = 946684800; // Example: January 1, 2000 (in seconds)
     const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
-    const ageThreshold = 18 * 365 * 24 * 60 * 60; // Example: 18 years in seconds
+    const ageThreshold = 18; // Example: 18 years in seconds
     const uid = "12345";
     const name = "0x123456789abcdef";
     // Deploy a dummy dIdentityContract (replace with actual contract instance)
     const dIdentityContract = {
-      getID: async (address) => {
+      getID: async (address) => { 
         // Example: return a mock identity object
         return { dobHash: "0x123456789abcdef" };
       },
@@ -258,8 +305,30 @@ async function main() {
     // const decrptedData = decryptString("04020191266857ab991945310c0073ff:062cc193d772e4a3634cb156556de776", k);
     // console.log("Decrypted Data: ", decrptedData);
 
+
+        console.log("Creating age proof...");
+    const { proof, publicSignals } = await createNegNftProof(10);
+    console.log("Proof:", proof);
+    console.log("Public Signals:", publicSignals);
+
+    // Step 2: Verify Age Proof
     
-   registerUser("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa", "123456", "NAME", "15689"); 
+    let result = false;
+    console.log("Verifying age proof...");
+    const verificationResult = await verifyNegNftProof(proof, publicSignals);
+    console.log("Verification Result:", Boolean(publicSignals[0]));
+    if (publicSignals[0] == '0') {
+      console.log("You are not capable for kyc");
+      result = false;
+    }else{
+      console.log("you are capable for kyc");
+      result = true;
+    }
+
+    
+
+    //console.log(calculateAgeDifference("2000-09-15","2024-09-14"));
+   //registerUser("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa", "123456", "NAME", "15689"); 
     //getData("0xf4CbC39c728C1cd47e0F06ef8698Dd512c5f06Fa");
   //console.log( stringToBigInt("NAME"))
 
